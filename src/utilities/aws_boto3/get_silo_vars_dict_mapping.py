@@ -5,7 +5,7 @@ def get_silo_vars_dict_mapping():
         'monthly_rainfall' : 'monthly_rain',
         'daily_rainfall' : 'daily_rain',
         'morton_actual_evapotranspiration' : 'et_morton_actual',
-        'morton_potential_evapotranspiration' : 'et_morton_potential	',
+        'morton_potential_evapotranspiration' : 'et_morton_potential',
         'morton_wet_area_potential_evapotranspiration' : 'et_morton_wet',
         'max_temp' : 'max_temp',
         'min_temp' : 'min_temp',
