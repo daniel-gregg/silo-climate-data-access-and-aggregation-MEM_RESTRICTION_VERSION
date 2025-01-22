@@ -1,6 +1,6 @@
 ### Accesses the Australian Bureau of Statistics website and downloads shape files (.shp) for SA (statistical area) boundaries
 import zipfile
-import urllib
+import urllib.request
 
 import sys
 import os
