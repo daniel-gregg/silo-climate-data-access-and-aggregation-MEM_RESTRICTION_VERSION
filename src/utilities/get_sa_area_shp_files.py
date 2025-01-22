@@ -48,8 +48,8 @@ for filename in filenames.keys():
     # first create folder if it doesn't exist:
     target_subdir = os.path.join('data', 'SA_data_shapefiles', filename)
     if not os.path.isdir(target_subdir):
-         Path(target_subdir).mkdir(parents=True, exist_ok=True)
+        Path(target_subdir).mkdir(parents=True, exist_ok=True)
 
     # extract to target subdir
     with zipfile.ZipFile(target_dir + '/' + filenames[filename]) as zip_file:
-            zip_file.extractall(target_subdir)
+        zip_file.extractall(target_subdir)
