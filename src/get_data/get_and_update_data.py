@@ -16,6 +16,7 @@ sys.path.append(str(path_root))
 #custom modules
 from src.utilities.aws_boto3.get_silo_data import get_silo_data
 from src.utilities.abs_sa_regions.get_abs_data import get_abs_data
+from src.utilities.delete_zip import delete_zip
 
 def get_and_refresh_data(
         years=[*range(2011,2023)],
@@ -51,7 +52,9 @@ def get_and_refresh_data(
     ## Get ABS data
     if abs:
         get_abs_data(subset = abs_subsets)
-
+    
+    ## delete pre-existing zip files in data if present
+    delete_zip()
     
                 
 

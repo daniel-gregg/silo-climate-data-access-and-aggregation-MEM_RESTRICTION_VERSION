@@ -42,6 +42,21 @@ You need to ttach this policy to your IAM user in order to access the silo data.
 
 ### Other setup
 
+#### Create .env variables to safeguard your passwords
+Check if a .env file exists in your main directory (it should). If not, create one.
+Add your Amazon IAM User key and password to the .env as:
+
+```
+AWS_ACCESS_KEY_ID = 'XXX'
+AWS_SECRET_KEY = 'YYY'
+```
+
+#### Ensure .gitignore includes 'data/'
+BEFORE running the script ensure your .gitignore file includes:
+```
+data/
+```
+This ensures that the data folder is not shared to github. The data files are large and should not be copied across commits/push/pull between your local drive and the repository. This is also good practice for data safety in general. 
 
 ## Run script
 
