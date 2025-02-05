@@ -7,43 +7,32 @@ import sys
 import os
 from pyprojroot.here import here
 from pathlib import Path
-import glob
 
 #append path using 'here'
 path_root = here()
 sys.path.append(str(path_root))
 
-from src.utilities.spatial.get_zonal_statistics_and_rasters import get_zonal_statistics_and_rasters
+# local utilities
+from src.utilities.spatial.process_tiff_files import process_tiff_files
+from src.utilities.spatial.check_tiff_file_processing_gaps import check_tiff_file_processing_gaps
 
-#variables
-climate_variable_paths = {x: [here((f'data/climate_data/{x}/{y}')) for y in os.listdir(f'data/climate_data/{x}')] for x in os.listdir(here('data/climate_data'))}
-abs_sa_data_paths = {x: y for y in glob.glob(f'data/SA_data_shapefiles/{x}/*.shp') for x in os.listdir(f'data/SA_data_shapefiles')}
+def generate_spatial_data():
+    
+    # Check existence of processed Tiffs/Zonal statistics
+    ## Function returns a list of data for processing to tiffs by checking date/varname correspondences
+    data_lists = check_tiff_file_processing_gaps()
 
-#loop through nc_data_paths and the abs_sa_shapefiles dictionaries to generate tiffs and zonal/period statistics
-for climate_var in climate_variable_paths:
-    for sa_region in abs_sa_data_paths:
-        get_zonal_statistics_and_rasters(
-            climate_var,
-            sa_region
-        )
-
-## Get NC files list
-
-
-## Read in NC files
-
-
-## Check for existence of relevant tiff files
-
-
-## Convert to TIFF
-
-
-## Mask with shapefiles from ABS for statistical areas
-
-
-## Calculate relevant zonal statistics
-
-
-## Generate .csv files with target statistics
+    if not data_lists['files_already_processed']:
+        print('no processed files found')
+    else:
+        print('found the following files already processed\n')
+        #print(f'{data_lists["files_already_processed"]}')
+    if data_lists['files_to_process']:
+        print(f'found {len(data_lists['files_to_process'])} files to process\n')
+        user_input = input('Do you want to see the list of files to process? (yes/no)')
+        if user_input.lower == 'yes' or user_input.lower() == 'y':
+            print(f'{data_lists['files_to_process']}\n')
+        process_tiff_files(data_lists['files_to_process'])
+    else:
+        print('all files up-t-date, exiting process')
 
