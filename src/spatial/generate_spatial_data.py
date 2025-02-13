@@ -22,6 +22,7 @@ def generate_spatial_data():
     ## Function returns a list of data for processing to tiffs by checking date/varname correspondences
     data_lists = check_tiff_file_processing_gaps()
 
+    # switch block to decide what to do next and call relevant functions
     if not data_lists['files_already_processed']:
         print('no processed files found')
     else:
@@ -34,5 +35,5 @@ def generate_spatial_data():
             print(f'{data_lists['files_to_process']}\n')
         process_tiff_files(data_lists['files_to_process'])
     else:
-        print('all files up-t-date, exiting process')
+        print('all files up-to-date, exiting process')
 

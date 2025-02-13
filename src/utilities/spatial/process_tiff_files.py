@@ -1,5 +1,15 @@
 
-from src.utilities.spatial.get_zonal_statistics_and_rasters import get_zonal_statistics_and_rasters
+#core modules/packages
+import sys
+import os
+from pyprojroot.here import here
+from pathlib import Path
+
+#append path using 'here'
+path_root = here()
+sys.path.append(str(path_root))
+
+from utilities.spatial.get_zonal_statistics_and_rasters_silo_vars import get_zonal_statistics_and_rasters_silo_vars
 
 def process_tiff_files(files_to_process):
     
@@ -11,17 +21,24 @@ def process_tiff_files(files_to_process):
         print("Exiting...")
         return ()
     
-    """ # this loop will only process data for False entries in the above dictionary (i.e. present in data/climate_data but not data/tiff_files)
-    for sa_scope in varnames_present_in_processed_data.keys():
-        sa_scope_sub_dict = varnames_present_in_processed_data[sa_scope]
-        for var in sa_scope_sub_dict.keys():
-            sa_scope_var_sub_dict = sa_scope_sub_dict[var]
-            for year in sa_scope_var_sub_dict[year]:
-                get_zonal_statistics_and_rasters(sa_scope, var, year)
-                #should print 'processed data for ABS {sa_scope} for variable {var} for year {year}       
-    """
-
-
+    for file_name in files_to_process:
+        raw_data_file_dir = file_name.split('.')
+        file_dir_string = 'data/climate_data'
+        for element in raw_data_file_dir:
+            if element in os.listdir('data/SA_data_shapefiles'):
+                sa_scope = element
+                continue
+            else:
+                file_dir_string = file_dir_string + f'/{element}'
+        
+        # check file exists
+        print(file_dir_string)
+        if not os.path.exists(file_dir_string+'.nc'):
+            return FileExistsError(f'file {file_dir_string} not found')
+        
+        # else move to obtaining zonal statistics and rasters
+        get_zonal_statistics_and_rasters_silo_vars(file_dir_string, sa_scope)
+   
     return 'done'
 
 

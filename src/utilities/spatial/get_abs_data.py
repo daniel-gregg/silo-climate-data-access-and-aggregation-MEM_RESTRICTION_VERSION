@@ -12,7 +12,7 @@ from pathlib import Path
 path_root = here()
 sys.path.append(str(path_root))
 
-def get_abs_data(abs_subsets):
+def get_abs_data(sa_scope_list):
 
     # target directory
     target_dir = os.path.join('data', 'SA_data_shapefiles')
@@ -38,7 +38,7 @@ def get_abs_data(abs_subsets):
     # loop through and extract/save to directory
     for filename in filenames.keys():
         # check if SA distinction is a target (included in subsets)
-        if filename in abs_subsets:
+        if filename in sa_scope_list:
             target_subdir = os.path.join('data', 'SA_data_shapefiles', filename)
 
             # check if exists
