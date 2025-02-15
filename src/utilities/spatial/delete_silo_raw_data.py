@@ -12,6 +12,9 @@ sys.path.append(str(path_root))
 
 def delete_silo_raw_data(var):
     ## delete target silo data var
-    file = os.path.join(here(f'data/silo/{var}.nc'))
-    print(f'removing {file} from /data')
-    os.remove(file)
+    dirpath = os.path.join(here(f'data/silo/{var}/'))
+    years = os.listdir(dirpath)
+    for year in years:
+        file = os.path.joing(here(f'data/silo/{var}/{year}.nc'))
+        print(f'removing {file} from /data')
+        os.remove(file)

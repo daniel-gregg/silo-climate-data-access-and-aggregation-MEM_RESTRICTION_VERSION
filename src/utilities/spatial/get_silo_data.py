@@ -13,7 +13,7 @@ sys.path.append(str(path_root))
 
 #custom modules
 from src.utilities.aws_boto3.boto3_session import get_boto3_session
-from utilities.spatial.get_vars_dict_mapping import get_vars_dict_mapping
+from src.utilities.spatial.get_vars_dict_mapping import get_vars_dict_mapping
 
 def get_silo_data(var, years):
 
@@ -22,7 +22,7 @@ def get_silo_data(var, years):
     bucket = 'silo-open-data'
 
     # check data and return dict for accessing boto3 data
-    silo_vars_all = get_vars_dict_mapping() #mapping for all available silo vars from varnames to boto3 filenames (not including prefix and year/month/day)
+    silo_vars_all = get_vars_dict_mapping()['silo'] #mapping for all available silo vars from varnames to boto3 filenames (not including prefix and year/month/day)
     
     target_subdir = here(f'data/silo/{var}')
     if not os.path.isdir(target_subdir):

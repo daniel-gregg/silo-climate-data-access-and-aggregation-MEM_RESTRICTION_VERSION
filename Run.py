@@ -15,7 +15,6 @@ sys.path.append(str(path_root))
 from data.user_selected_data_dict import user_selected_data_dict
 
 # local modules
-from src.get_data.get_and_update_data import get_and_refresh_data
 from src.utilities.spatial.get_abs_data import get_abs_data
 from src.utilities.delete_zip import delete_zip
 from src.utilities.spatial.get_silo_data import get_silo_data
@@ -33,10 +32,10 @@ get_abs_data(sa_scope_list)
 delete_zip()
 
 ### Get silo variables and map to rasters/csvs for selected regions
-silo_vars_dict = target_data_dict['silo_climate_vars']
+silo_vars_dict = target_data_dict['silo']
 for var in silo_vars_dict.keys():
     var_years = silo_vars_dict[var]
-    get_silo_data(var, years)
+    get_silo_data(var, var_years)
     get_zonal_statistics_and_rasters_silo_vars(var, name)
     delete_silo_raw_data(var)
 

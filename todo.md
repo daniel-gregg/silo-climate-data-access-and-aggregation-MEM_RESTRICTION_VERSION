@@ -1,4 +1,5 @@
 # To Do list
+* add code to remove data after translation to tiff/zonal stats
+* add NDVI 
+* add soil moisture
 
-* add code to remove zipfiles after extraction for the ABS SA shapefiles
-* update filepath specification using here() functionality

@@ -12,10 +12,10 @@ from datetime import datetime, date
 path_root = here()
 sys.path.append(str(path_root))
 
-def get_sa_areas_masking_shapefile(sa_scope, regions_list = None, name = None):
+def get_sa_areas_masking_shapefile(scope, regions_list = None, name = None):
     
     #get base shapefile
-    abs_region_path = here(f'data/SA_data_shapefiles/{sa_scope}')
+    abs_region_path = here(f'data/SA_data_shapefiles/{scope}')
     base_shapefile = gpd.read_file(abs_region_path)
 
     sa_code_var_dict = {
@@ -32,21 +32,35 @@ def get_sa_areas_masking_shapefile(sa_scope, regions_list = None, name = None):
     if regions_list:
 
         if name:
-            target_file_dir = here(f'data/SA_data_shapefiles/{sa_scope}_{name}_{date_string}.shp')
+            target_file_dir = here(f'data/SA_data_shapefiles/{scope}_{name}_{date_string}.shp')
         else:
-            target_file_dir = here(f'data/SA_data_shapefiles/{sa_scope}_{date_string}.shp')
+            target_file_dir = here(f'data/SA_data_shapefiles/{scope}_{date_string}.shp')
 
         # regions_list will include a set of sa codes based on the sa scope
-        codes_in_shapefile = base_shapefile[sa_code_var_dict[sa_scope]]
+        codes_in_shapefile = base_shapefile[sa_code_var_dict[scope]]
 
-        # create new shapefile with subset
-        base_shapefile[codes_in_shapefile in regions_list].to_file(target_file_dir)
+        # first subset removing strings that are not convertable to integers (i.e. 'zzzzz')
+        def value_error_check(x):
+            try:
+                int(x)
+                return x
+            except:
+                pass
+        codes_in_shapefile = [value_error_check(x) for x in codes_in_shapefile]
+        codes_in_shapefile = [x for x in codes_in_shapefile if x is not None]
+        
+        # create new subset of sa codes by checking for which are in regions_list
+        codes_in_shapefile = [x for x in codes_in_shapefile if int(x) in regions_list]
+        
+        # subset the base_shapefile to the target regions
+        mask = base_shapefile[sa_code_var_dict[scope]].isin(codes_in_shapefile)
+        new_shapefile = base_shapefile[mask].to_file(target_file_dir)
     
     else:
         if name:
-            target_file_dir = here(f'data/SA_data_shapefiles/{sa_scope}_{name}_{date_string}.shp')
+            target_file_dir = here(f'data/SA_data_shapefiles/{scope}_{name}_{date_string}.shp')
         else:
-            target_file_dir = here(f'data/SA_data_shapefiles/{sa_scope}_{date_string}.shp')
+            target_file_dir = here(f'data/SA_data_shapefiles/{scope}_{date_string}.shp')
 
     # read in masking shapefile and return
     masking_shapefile = gpd.read_file(target_file_dir)
