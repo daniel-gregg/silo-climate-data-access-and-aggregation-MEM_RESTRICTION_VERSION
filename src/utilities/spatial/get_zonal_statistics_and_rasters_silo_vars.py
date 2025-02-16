@@ -10,7 +10,6 @@ from pathlib import Path
 path_root = here()
 sys.path.append(str(path_root))
 
-
 ## Spatial modules/packages
 import xarray as xr
 import pandas as pd
@@ -105,34 +104,38 @@ def get_zonal_statistics_and_rasters_silo_vars(var, name = ''):
                         dst.write(data_vals[period, :, :], 1)  # Save each month in a separate file
                 
                         # Perform zonal statistics on the monthly TIFF
-                        try:
-                            masking_shapefile = masking_shapefile[~(masking_shapefile['geometry'].is_empty | masking_shapefile['geometry'].isna())]
-                            stats = zonal_stats(masking_shapefile, tiff_file_name, stats=['mean', 'min', 'max'], nodata=-9999, geojson_out=True, all_touched=True, raster_out=True)
-                        except:
-                            if record == year:
-                                print(f'statistics for {var} in {year} not available')
-                            if type(record) == list:
-                                print(f'statistics for {var} in {year} and month {record[period]} not available')
-                            if record == 'day':
-                                print(f'statistics for {var} in {year} and day{period+1} not available')
-                            continue
-
-                        # Convert the GeoJSON features to a DataFrame
-                        features_list = [feature['properties'] for feature in stats]
-                        result_df = pd.DataFrame(features_list)
-                
-                        # set csv file path and make directory if it doesn't exist
-                        Path(os.path.join('data', 'csv_data')).mkdir(parents=True, exist_ok=True)
-
+                    try:
+                        masking_shapefile = masking_shapefile[~(masking_shapefile['geometry'].is_empty | masking_shapefile['geometry'].isna())]
+                        stats = zonal_stats(masking_shapefile, tiff_file_name, stats=['mean', 'min', 'max'], nodata=-9999, geojson_out=True, all_touched=True, raster_out=True)
+                    except:
                         if record == year:
-                            csv_file_name = os.path.join(f'data/csv_data/{var}_{year}.csv')
+                            print(f'statistics for {var} in {year} not available')
                         if type(record) == list:
-                            csv_file_name = os.path.join(f'data/csv_data/{var}_{year}_{record[period]}.csv')
+                            print(f'statistics for {var} in {year} and month {record[period]} not available')
                         if record == 'day':
-                            csv_file_name = os.path.join(f'data/csv_data/{var}_{year}_day{period+1}.csv')
-                
-                        output_csv = os.path.join(csv_file_name)
-                        result_df.to_csv(output_csv, index=False)
+                            print(f'statistics for {var} in {year} and day{period+1} not available')
+                        continue
+
+                    # Convert the GeoJSON features to a DataFrame
+                    features_list = [feature['properties'] for feature in stats]
+                    result_df = pd.DataFrame(features_list)
+
+                    # Set csv file name and dir
+                    if record == year:
+                        csv_dir_name = os.path.join(f'data/csv_data/{var}')
+                        csv_file_name = os.path.join(f'data/csv_data/{var}/{year}.csv')
+                    if type(record) == list:
+                        csv_dir_name = os.path.join(f'data/csv_data/{var}/{year}')
+                        csv_file_name = os.path.join(f'data/csv_data/{var}/{year}/{record[period]}.csv')
+                    if record == 'day':
+                        csv_dir_name = os.path.join(f'data/csv_data/{var}/{year}')
+                        csv_file_name = os.path.join(f'data/csv_data/{var}/{year}/day{period+1}.csv')
+            
+                    # make directory if it doesn't exist
+                    Path(csv_dir_name).mkdir(parents=True, exist_ok=True)
+
+                    # save file to csv
+                    result_df.to_csv(csv_file_name, index=False)
 
         #delete raw data files on success
     
