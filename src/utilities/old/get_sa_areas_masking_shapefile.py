@@ -32,9 +32,9 @@ def get_sa_areas_masking_shapefile(scope, regions_list = None, name = None):
     if regions_list:
 
         if name:
-            target_file_dir = here(f'data/SA_data_shapefiles/{scope}_{name}_{date_string}.shp')
+            target_file_dir = here(f'data/SA_data_shapefiles/{name}/{scope}_{date_string}.shp')
         else:
-            target_file_dir = here(f'data/SA_data_shapefiles/{scope}_{date_string}.shp')
+            target_file_dir = here(f'data/SA_data_shapefiles/{name}/{scope}_{date_string}.shp')
 
         # regions_list will include a set of sa codes based on the sa scope
         codes_in_shapefile = base_shapefile[sa_code_var_dict[scope]]
@@ -54,15 +54,6 @@ def get_sa_areas_masking_shapefile(scope, regions_list = None, name = None):
         
         # subset the base_shapefile to the target regions
         mask = base_shapefile[sa_code_var_dict[scope]].isin(codes_in_shapefile)
-        new_shapefile = base_shapefile[mask].to_file(target_file_dir)
+        new_shapefile = base_shapefile[mask]
     
-    else:
-        if name:
-            target_file_dir = here(f'data/SA_data_shapefiles/{scope}_{name}_{date_string}.shp')
-        else:
-            target_file_dir = here(f'data/SA_data_shapefiles/{scope}_{date_string}.shp')
-
-    # read in masking shapefile and return
-    masking_shapefile = gpd.read_file(target_file_dir)
-    
-    return masking_shapefile    
+    return new_shapefile    
