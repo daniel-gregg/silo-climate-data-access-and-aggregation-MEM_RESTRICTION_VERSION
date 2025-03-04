@@ -49,7 +49,7 @@ for var in silo_vars_dict.keys():
 
         # print a warning if less than 12 records returned (indicates either an annual variable or part year only)
         if check and check < 12:
-                print('Warning: only {check} records present for variable {var} in {year}')
+                print(f'Warning: only {check} records present for variable {var} in {year}')
     
         if not check:
             # data not present
@@ -60,7 +60,7 @@ for var in silo_vars_dict.keys():
             process_silo_var(var, year, name)
 
             # delete raw data to save harddrive space
-            delete_silo_raw_data(var, year)
+            delete_silo_raw_data(var, year,name)
 
 
 ### Download other data

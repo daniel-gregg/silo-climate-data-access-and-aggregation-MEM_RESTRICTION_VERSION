@@ -6,6 +6,7 @@ from pyprojroot.here import here
 from pathlib import Path
 import pandas as pd
 import glob
+import time
 
 from data import user_selected_data_dict
 
@@ -20,25 +21,16 @@ def check_silo_csv(var, year, name = None):
 
     # check if dir exists
     if name:
-        file_dir = f'data/csv_data/{name}/{var}.csv'
+        file_dir = f'data/csv_data/{name}/{var}/{year}.csv'
     else:
-        file_dir = f'data/csv_data/{var}.csv'
+        file_dir = f'data/csv_data/{var}/{year}.csv'
 
     if not os.path.exists(file_dir):
         # file does not exist so no data
         check = False
     else:
         #read file
-        df = pd.read_csv(file_dir)
-
-        #subset for year:
-        sub_df = df[df['year']==year]
-
-        # if empty, no data for that year present.
-        if sub_df.empty:
-            check = False
-        else:
-            check = sub_df.shape[0] #return number of rows
+        check = True
     
     return check
 
@@ -188,8 +180,27 @@ def check_tiff_file_processing_gaps():
         'files_to_process' : files_to_process
     }
     
-def delete_silo_raw_data(var, year):
+def delete_silo_raw_data(var, year, name = None):
     
+    time.sleep(5)
+    
+    # delete nc file
     file = os.path.join(here(f'data/silo/{var}/{year}.nc'))
     print(f'removing {file} from /data')
     os.remove(file)
+
+    # find and delete tiff files
+    if name:
+        filelist = os.listdir(here(f'data/tiff_files/{name}/{var}'))
+        for file in filelist:
+            try:
+                os.remove(here(f'data/tiff_files/{name}/{var}/{file}'))
+            except:
+                continue
+    else:
+        filelist = os.listdir(here(f'data/tiff_files/{var}'))
+        for file in filelist:
+            try:
+                os.remove(here(f'data/tiff_files/{name}/{file}'))
+            except:
+                continue

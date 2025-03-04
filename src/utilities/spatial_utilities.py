@@ -12,7 +12,6 @@ sys.path.append(str(path_root))
 # web and file utilities
 import zipfile
 import urllib.request
-from datetime import datetime, date
 
 # Spatial modules/packages
 import calendar
@@ -20,8 +19,8 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 import rasterio as rio
-from rasterstats import zonal_stats
 import geopandas as gpd
+from exactextract import exact_extract
 
 #local imports
 from src.utilities.data_utilities import get_vars_dict_mapping
@@ -77,24 +76,24 @@ def get_abs_data(sa_scope_list):
                 with zipfile.ZipFile(target_dir + '/' + filenames[filename]) as zip_file:
                     zip_file.extractall(target_subdir)
 
-def save_silo_csv(df, var, name = None):
+def save_silo_csv(df, var, year, name = None):
     # check if dir exists
     if name:
-        target_dir = f'data/csv_data/{name}'
+        target_dir = f'data/csv_data/{name}/{var}'
         if not os.path.exists(target_dir):
             # create path
             Path(target_dir).mkdir(parents=True, exist_ok=True)
         
         # save to target dir
-        df.to_csv(f'data/csv_data/{name}/{var}.csv')
+        df.to_csv(f'data/csv_data/{name}/{var}/{year}.csv', index = False)
     else:
-        target_dir = f'data/csv_data'
+        target_dir = f'data/csv_data/{var}'
         if not os.path.exists(target_dir):
             # create path
             Path(target_dir).mkdir(parents=True, exist_ok=True)
         
         # save to target dir
-        df.to_csv(f'data/csv_data/{var}.csv')
+        df.to_csv(f'data/csv_data/{var}/{year}.csv', index = False)
 
 def get_recursive_days_in_year(year, month, days=0):
     if month > 1:
@@ -116,7 +115,7 @@ def get_month(year, day, month = 1):
 ### Function to convert netcdf4 files to raster (tiff) files. 
 def convert_nc_to_raster(var, year, data_source, name = ''):
 
-    #check if target tiff files already exist - if so then data is processed   
+    print(f'opening nc data file for {var}-{year} for conversion to raster')
     data_var_path = here(f'data/{data_source}/{var}/{year}.nc')
     data_file = xr.open_dataset(data_var_path) #this is the 'ds_xxx' file in Yuan's original script
     # lat is reversed so reindex
@@ -144,11 +143,11 @@ def convert_nc_to_raster(var, year, data_source, name = ''):
 
     # set tiff file path and make directory if it doesn't exist
     tiff_file_dir = os.path.join(f'data/tiff_files/{name}/{var}')
-    tiff_file_name = os.path.join(f'data/tiff_files/{name}/{var}/{year}.tif')
     Path(os.path.join(tiff_file_dir)).mkdir(parents=True, exist_ok=True)
 
     # set the number of bands for the meta data
     bands = data_vals.shape[0]
+    print(f'{bands} bands found in raster for {var} in {year}')
 
     #set metadata
     meta = {'driver': 'GTiff',
@@ -160,23 +159,39 @@ def convert_nc_to_raster(var, year, data_source, name = ''):
             'crs': 4326,
             'nodata': np.nan}
     
+    tiff_file_name = os.path.join(f'data/tiff_files/{name}/{var}/{year}.tif')
+
+    # year records
     if record == 'year':
         with rio.open(tiff_file_name, 'w', **meta) as dst:
+            print(f'writing annual band for {var}-{year} to tiff file')
             dst.write(data_vals[0, :, :], 1)  # Save each month in a separate file
+    
+    # month records
     if record == 'month':
-            # Select data for the current month
-            with rio.open(tiff_file_name, 'w', **meta) as dst:
-                for month in range(1, bands+1):
-                    monthly_data = target_data.sel(time=target_data['time'].dt.month == month)
-                    dst.write(monthly_data.values[0, :, :], month)
+        # Select data for the current month
+        with rio.open(tiff_file_name, 'w', **meta) as dst:
+            for month in range(1, bands+1):
+                # save tiff band
+                print(f'writing monthly band {month} for {var}-{year} to tiff file')
+                dst.write(data_vals[month-1, :, :], month)
+    
+    # daily records
     if record == 'day':
         with rio.open(tiff_file_name, 'w', **meta) as dst:
             for day in range(1, bands+1):
+                print(f'writing daily band {day} for {var}-{year} to tiff file')
                 dst.write(data_vals[day-1, :, :], day)
+
+    # delete the connection to open up access to file removal etc.
+    del dst
+
 
 ### function to import Tiff file (raster), mask it with target shapefile/region, and calculate zonal stats 
 # returns a pandas dataframe
-def mask_and_merge_var_years_zonal_stats(var, year, name=None):
+def mask_and_merge_var_years_zonal_stats(var, year, name = None, include_cols = []):
+
+    print(f'undertaking zonal stats for {var}-{year}')
 
     # get data targets
     target_data_dict = user_selected_data_dict()
@@ -191,133 +206,72 @@ def mask_and_merge_var_years_zonal_stats(var, year, name=None):
     data_out = pd.DataFrame()
     result_df = pd.DataFrame()
     subsets = [* masking_subsets_dict.keys()]
-    months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
     
     # first get scope
     for scope in sa_scope:
 
-        # check if there is a masking function specified
-        if masking_subsets_dict:
-            for subset in subsets:
-                # get the masking shapefile - this includes any subsets
-                regions_list = masking_subsets_dict[subset](scope)
-                masking_shapefile = get_sa_areas_masking_shapefile(scope, regions_list, name)
-                # filter out empty or null geometries
-                masking_shapefile = masking_shapefile[~(masking_shapefile['geometry'].is_empty | masking_shapefile['geometry'].isna())]
+        for subset in subsets:
 
-                if name:
-                    tiff_file_name = f'data/tiff_files/{name}/{var}/{year}.tif'
-                else:
-                    tiff_file_name = f'data/tiff_files/{var}/{year}.tif'
-                # Perform zonal statistics on the monthly TIFF
+            # get the masking shapefile - this includes any subsets
+            regions_list = masking_subsets_dict[subset](scope)
+            masking_shapefile = get_sa_areas_masking_shapefile(scope, regions_list, name)
+            # filter out empty or null geometries
+            masking_shapefile = masking_shapefile[~(masking_shapefile['geometry'].is_empty | masking_shapefile['geometry'].isna())]
+            # 'explode' the shapefile to remove multipolygons that do not work with exact_extract
+            masking_shapefile = masking_shapefile.explode(columns = 'geometry')
+            
+            # get tiff file
+            if name:
+                tiff_file_name = f'data/tiff_files/{name}/{var}/{year}.tif'
+            else:
+                tiff_file_name = f'data/tiff_files/{var}/{year}.tif'
 
-                # Earlier test of pre-clipping raster to speed up does not result in a speed improvement    
-                #geometries = masking_shapefile['geometry']
-                #clipped = rioxarray.open_rasterio(tiff_file_name, masked=True).rio.clip(geometries)
-                #clipped.rio.to_raster(f'data/tiff_files/{name}/{var}/{year}_clipped.tif', compress='LZMA', tiled=True)
+            try:
                 
-                try:
-                    #load file
-                    with rio.open(tiff_file_name) as src:
-                        bands = src.count # number of bands in file - reflects whether monthly or daily data
+                stats = exact_extract(
+                    here(tiff_file_name), 
+                    masking_shapefile, 
+                    ["mean", "min", "max"], 
+                    max_cells_in_memory = 30000000, 
+                    strategy = "raster-sequential", 
+                    progress = True, 
+                    output = 'pandas',
+                    include_cols = include_cols)
                 
-                    if bands == 1:
-                        ### YEARLY RECORDS ###
-                        stats = zonal_stats(masking_shapefile, tiff_file_name, geojson_out=True, nodata=np.nan, stats=['mean', 'min', 'max'])
-                        features_list = [feature['properties'] for feature in stats]
+                # collate stats
+                # generate new data and rename
+                new_data = stats
+                rows = new_data.shape[0]
+                new_data = pd.concat(
+                    [pd.DataFrame({
+                        'name' : [name]*rows,
+                        'abs_sa_scope' : [scope]*rows,
+                        'year' : [year]*rows
+                    }),
+                    new_data
+                    ],
+                    axis = 1
+                )
                         
-                        # generate new data
-                        new_data = pd.DataFrame(features_list)
-                        new_data['name'] = name
-                        new_data['abs_sa_scope'] = scope
-                        new_data['year'] = year
-                        new_data['month'] = np.nan
-                        new_data['day'] = np.nan
-
-                        if data_out.empty:
-                            # create target df
-                            data_out = new_data
-                        else:
-                            #merge onto final df
-                            data_out = pd.concat([data_out, new_data])
-
-                    if bands == 12:
-                        ### MONTHLY RECORDS ###
-                        for band in range(bands):
-                            stats = zonal_stats(masking_shapefile, tiff_file_name, geojson_out=True, nodata=-9999, stats=['mean', 'min', 'max'], band_num = band, all_touched = True)
-                            features_list = [feature['properties'] for feature in stats]
-                            
-                            # generate new data
-                            new_data = pd.DataFrame(features_list)
-                            new_data['name'] = name
-                            new_data['abs_sa_scope'] = scope
-                            new_data['year'] = year
-                            new_data['month'] = months[band-1]
-                            new_data['day'] = np.nan
-
-                            if data_out.empty:
-                                # create target df
-                                data_out = new_data
-                            else:
-                                #merge onto final df
-                                data_out = pd.concat([data_out, new_data])
-                    
-                    else:
-                        ### DAILY RECORDS ###
-                        if bands > 366 or bands < 365:
-                            Warning(f'bands must be either year, months or days ref: {var} in {year} has {bands} bands')
-                        
-                        ## Initialise items for indexing months
-                        month_base = 1 #set initial month base for aggregation
-
-                        # loop through bands (day records) and save to df
-                        for band in range(bands):
-                            #get current month first
-                            current_month_index = get_month(year, band)
-
-                            #get day number in month
-                            if current_month_index == 1:
-                                day_in_month = band + 1
-                            else:
-                                day_in_month = band + 1 - get_recursive_days_in_year(year, current_month_index - 1)
-                            
-                            # get zonal stats for day
-                            stats = zonal_stats(masking_shapefile, tiff_file_name, geojson_out=True, nodata=np.nan, stats=['mean', 'min', 'max'], band_num = band)
-                            features_list = [feature['properties'] for feature in stats]
-                            
-                            # generate new_data
-                            new_data = pd.DataFrame(features_list) 
-                            new_data['name'] = name
-                            new_data['abs_sa_scope'] = scope
-                            new_data['year'] = year
-                            new_data['month'] = months[current_month_index-1]
-                            new_data['day'] = day_in_month
-                            
-                            if data_out.empty:
-                                # create subdat dataframe
-                                data_out = new_data
-                            else:
-                                # merge onto data_out
-                                data_out = pd.concat([data_out, new_data])
-
-                            # check if need to update month index    
-                            if current_month_index == month_base:
-                                # set updated month base for next base
-                                month_base += 1
-                    
-                except:
-                    print(f'statistics for {var} in {year} not available')
-
-                # Convert the GeoJSON features to a DataFrame
-                
-
-                # merge to DF
-                if result_df.empty:
-                    # Initialise df
-                    result_df = pd.DataFrame(data_out)
+                if data_out.empty:
+                    # create target df
+                    data_out = new_data
                 else:
-                    # Merge df
-                    result_df = pd.concat([result_df, data_out], axis = 0)
+                    #merge onto final df
+                    data_out = pd.concat([data_out, new_data], axis = 0)
+            
+            except:
+                print(f'statistics for {var} in {year} not available')
+            
+            # merge to DF
+            if result_df.empty:
+                # Initialise df
+                result_df = pd.DataFrame(data_out)
+            else:
+                # Merge df
+                result_df = pd.concat([result_df, data_out], axis = 0)
+        
+        del stats #delete the stats object to remove any residual file connections to the raster 
         
         return result_df
 
@@ -330,24 +284,17 @@ def process_silo_var(var, year, name = None):
     convert_nc_to_raster(var, year, data_source = 'silo', name=name)
 
     # get zonal stats
-    df_update_for_var_year = mask_and_merge_var_years_zonal_stats(var, year, name=name)
+    df = mask_and_merge_var_years_zonal_stats(var, year, name=name, include_cols=['SA1_CODE21', 'AREASQKM21'])
     
-    # load any existing csv for this var
-    if os.path.exists(f'data/csv_data/{var}.csv'):
-        if name:
-            existing_data_for_var = pd.read_csv(f'data/csv_data/{name}/{var}.csv')
-        else:
-            existing_data_for_var = pd.read_csv(f'data/csv_data/{var}.csv')
-        
-        # merge with df_update_for_var_year
-        updated_df = pd.concat([existing_data_for_var, df_update_for_var_year], axis = 0)
+    # check if data file for var exists already
+    if name:
+        file_path = f'data/csv_data/{name}/{var}/{year}.csv'
+    else: 
+        file_path = f'data/csv_data/{var}/{year}.csv'
 
-        # save back to file
-        save_silo_csv(updated_df, var, name)
+    # save back to file
+    save_silo_csv(df, var, year, name)
 
-    # else save new csv to file
-    else:
-        save_silo_csv(df_update_for_var_year, var, name)
 
 def get_sa_areas_masking_shapefile(scope, regions_list = None, name = None):
     
@@ -362,16 +309,8 @@ def get_sa_areas_masking_shapefile(scope, regions_list = None, name = None):
         'sa4' : 'SA4_CODE21',
     }
 
-    #format target filename
-    date_string = "{:%Y_%m_%d}".format(datetime.now())
-    
     # subset based on regions
     if regions_list:
-
-        if name:
-            target_file_dir = here(f'data/SA_data_shapefiles/{name}/{scope}_{date_string}.shp')
-        else:
-            target_file_dir = here(f'data/SA_data_shapefiles/{name}/{scope}_{date_string}.shp')
 
         # regions_list will include a set of sa codes based on the sa scope
         codes_in_shapefile = base_shapefile[sa_code_var_dict[scope]]
