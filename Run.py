@@ -23,7 +23,15 @@ from src.utilities.spatial_utilities import process_silo_var
 from src.utilities.data_utilities import delete_zip
 from src.utilities.data_utilities import delete_silo_raw_data
 from src.utilities.data_utilities import check_silo_csv
+from src.utilities.data_utilities import delete_raw_csvs
 
+# var calculation functions
+from src.utilities.calc_vars import get_rainfall_vars
+from src.utilities.calc_vars import get_average_monthly_temps
+from src.utilities.calc_vars import get_cold_days_per_month
+from src.utilities.calc_vars import get_hot_days_per_month
+from src.utilities.calc_vars import get_high_and_extreme_vpd_days_per_month
+from src.utilities.calc_vars import get_var_means_as_monthly_records
 
 ### setup
 target_data_dict = user_selected_data_dict()
@@ -48,8 +56,8 @@ for var in silo_vars_dict.keys():
         # returns true if data already present for var-year combination
 
         # print a warning if less than 12 records returned (indicates either an annual variable or part year only)
-        if check and check < 12:
-                print(f'Warning: only {check} records present for variable {var} in {year}')
+        if check:
+            print(f'Records already present for variable {var} in {year}')
     
         if not check:
             # data not present
@@ -62,6 +70,32 @@ for var in silo_vars_dict.keys():
             # delete raw data to save harddrive space
             delete_silo_raw_data(var, year,name)
 
+    # process csvs to final
+    if var == 'daily_rainfall':
+        # get intensity and total rainfall values
+        get_rainfall_vars(name = name)
+    
+    if var == 'vapour_pressure_deficit':
+        get_high_and_extreme_vpd_days_per_month(name = name)
+
+    if var == 'min_temp':
+        get_cold_days_per_month(name = name)
+
+    if var == 'max_temp':
+        get_hot_days_per_month(name=name)
+
+    # for all vars get monthly and annual means
+    get_var_means_as_monthly_records(var = var, name = name)
+
+    # delete all EXCEPT min and max temp (need these to calculate average temp)
+    if not (var == 'min_temp' or var == 'max_temp'):
+        delete_raw_csvs(var, name)
+
+# now get average temps
+get_average_monthly_temps(name = name)
+# and delete csvs
+delete_raw_csvs('min_temp', name)
+delete_raw_csvs('max_temp', name)
 
 ### Download other data
 #TBD

@@ -34,6 +34,22 @@ def check_silo_csv(var, year, name = None):
     
     return check
 
+
+def delete_raw_csvs(var, name = None):
+    # first get target for var
+    #target_data = user_selected_data_dict()['silo'][var] # an array of years for var
+
+    # check if dir exists
+    if name:
+        dirpath = f'data/csv_data/{name}/{var}'
+    else:
+        dirpath = f'data/csv_data/{var}'
+
+    files_list = os.listdir(here(dirpath))
+
+    for file in files_list:
+        os.remove(here(f'data/csv_data/{name}/{var}/{file}'))
+
 def check_silo_tiff(var, years, name = None):
     # first get target for var
     #target_data = user_selected_data_dict()['silo'][var] # an array of years for var

@@ -95,23 +95,6 @@ def save_silo_csv(df, var, year, name = None):
         # save to target dir
         df.to_csv(f'data/csv_data/{var}/{year}.csv', index = False)
 
-def get_recursive_days_in_year(year, month, days=0):
-    if month > 1:
-        days = calendar.monthrange(year, month)[1] + days
-        return get_recursive_days_in_year(year, month-1, days)
-    else:
-        days = calendar.monthrange(year, month)[1] + days
-        return days
-    
-def get_month(year, day, month = 1):
-
-    min_days_for_month = get_recursive_days_in_year(year, month)
-    if day > min_days_for_month:
-        month = month+1
-        return get_month(year, day+1, month)
-    else:
-        return month
-
 ### Function to convert netcdf4 files to raster (tiff) files. 
 def convert_nc_to_raster(var, year, data_source, name = ''):
 
@@ -272,7 +255,7 @@ def mask_and_merge_var_years_zonal_stats(var, year, name = None, include_cols = 
                 result_df = pd.concat([result_df, data_out], axis = 0)
         
         del stats #delete the stats object to remove any residual file connections to the raster 
-        
+
         return result_df
 
 ### Final function to operationalise activities related to silo data processing
