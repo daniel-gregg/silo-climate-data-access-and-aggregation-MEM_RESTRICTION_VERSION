@@ -3,7 +3,7 @@ Scripts to access the SILO (Queensland Government) climate data and to download 
 
 ## getting started
 
-### Setting up an Amazon IAM User profile
+### Setting up an Amazon IAM User profile (SILO data access)
 
 #### Set up your profile
 
@@ -39,6 +39,10 @@ You need to ttach this policy to your IAM user in order to access the silo data.
 7. Click "Add permissions", then choose "Attach existing policies directly".
 8. Search for the policy you just created, select it, and click the "Attach policy" button.
 
+### Copernicus registration (NDVI/ground cover data)
+
+Follow the instructions here:
+https://documentation.dataspace.copernicus.eu/APIs/openEO/Python_Client/Python.html
 
 ### Other setup
 

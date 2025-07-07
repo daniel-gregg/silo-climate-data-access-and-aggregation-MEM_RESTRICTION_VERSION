@@ -13,12 +13,12 @@ from pathlib import Path
 
 
 ## Setting things up
-def get_boto3_session():
+def get_silo_boto3_session():
 
     # create session and define local variables for use in downloading data
     session = boto3.Session(
-        aws_access_key_id = os.environ['AWS_ACCESS_KEY_ID'],
-        aws_secret_access_key = os.environ['AWS_SECRET_KEY'],
+        aws_access_key_id = os.environ['SILO_ACCESS_KEY_ID'],
+        aws_secret_access_key = os.environ['SILO_SECRET_KEY'],
         region_name = 'ap-southeast-2'
         )
 
