@@ -70,7 +70,7 @@ for var in silo_vars_dict.keys():
             # delete raw data to save harddrive space
             delete_silo_raw_data(var, year,name)
 
-    # process csvs to final
+    """ # process csvs to final
     if var == 'daily_rainfall':
         # get intensity and total rainfall values
         get_rainfall_vars(name = name)
@@ -82,14 +82,14 @@ for var in silo_vars_dict.keys():
         get_cold_days_per_month(name = name)
 
     if var == 'max_temp':
-        get_hot_days_per_month(name=name)
+        get_hot_days_per_month(name=name) """
 
     # for all vars get monthly and annual means
     get_var_means_as_monthly_records(var = var, name = name)
 
     # delete all EXCEPT min and max temp (need these to calculate average temp)
-    if not (var == 'min_temp' or var == 'max_temp'):
-        delete_raw_csvs(var, name)
+    #if not (var == 'min_temp' or var == 'max_temp'):
+    #    delete_raw_csvs(var, name)
 
 # now get average temps
 get_average_monthly_temps(name = name)

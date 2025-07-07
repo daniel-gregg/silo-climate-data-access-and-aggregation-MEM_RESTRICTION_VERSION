@@ -1,11 +1,10 @@
 # To Do list
 
 ## flow
-* change flow to iterate over all processing elements var-year at a time instead of iterating of vars/years for each independent process
-    * This allows to integrate masking and zonal stats calculation into a single flow to reduce burden on storage
+* rebase 'calc_vars' main functions to functional coding:
+    * single function to operationalise processing with different aggregation functions selected by args
+    * check function for existing data
+    * year-by-year saving of data to csv and checking of existing data so can just run an update instead of full processing
 
-* change data collation to collate a single .csv file instead of many. 
-
-* add NDVI 
-* add soil moisture
+* add soil moisture (??)
 

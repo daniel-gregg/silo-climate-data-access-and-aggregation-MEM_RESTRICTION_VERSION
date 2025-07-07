@@ -17,6 +17,24 @@ import numpy as np
 
 ### Functions
 
+def save_csv(file, filename, name=None):
+    
+    # set dirpath and filepath
+    if name:
+        dirpath = f'data/csv_data/final_data/{name}'
+        filepath = f'data/csv_data/final_data/{name}/{filename}'
+    else:
+        dirpath = f'data/csv_data/final_data'
+        filepath = f'data/csv_data/final_data/{filename}'
+
+    # check exists and if not create dirpath
+    if not os.path.exists(here(dirpath)):
+        # make dir first
+        Path(here(dirpath)).mkdir(parents=True, exist_ok=True)
+    
+    # save output csv with id as single row
+    file.to_csv(here(filepath))
+
 # utility function to return number of days up to a given month in a given year
 def get_recursive_days_in_year(year, month, days=0):
     if month > 1:
@@ -86,6 +104,10 @@ def get_rainfall_vars(name = None):
     years = [int(year.split(".")[0]) for year in years]
     print(f'years {years} present for daily rainfall - processing to collate monthly means and monthly intensity indices')
 
+    # initialise empty df:
+    out_data_rainfall = pd.DataFrame()
+    out_data_intensity = pd.DataFrame()
+
     for year in years:
         print(f'initiating processing of daily rainfall for {year}')
 
@@ -101,14 +123,10 @@ def get_rainfall_vars(name = None):
         vars = [var for var in vars if 'mean' in var]
 
         # get days in year
-        if calendar.isleap(2001):
+        if calendar.isleap(year):
             days_in_year = 366
         else:
             days_in_year = 365
-
-        # initialise empty df:
-        out_data_rainfall = pd.DataFrame()
-        out_data_intensity = pd.DataFrame()
 
         # get daily intensity of rainfall first
         for id in ids_list:
@@ -212,8 +230,8 @@ def get_rainfall_vars(name = None):
                 )
 
     # save output csv with id as single row
-    out_data_rainfall.to_csv(here(f'data/csv_data/{name}/final_data/rainfall_mm.csv'))
-    out_data_intensity.to_csv(here(f'data/csv_data/{name}/final_data/rainfall_intensity.csv'))
+    save_csv(out_data_rainfall, 'rainfall_mm.csv', name=name)
+    save_csv(out_data_intensity, 'rainfall_intensity.csv', name=name)
 
 
 def get_var_means_as_monthly_records(var, name=None):
@@ -227,6 +245,9 @@ def get_var_means_as_monthly_records(var, name=None):
     years = os.listdir(here(dirpath))
     years = [int(year.split(".")[0]) for year in years]
     print(f'years {years} present for {var} - processing to collate monthly means')
+
+    # initialise empty df:
+    out_data = pd.DataFrame()
 
     for year in years:
         print(f'initiating processing of {var} for {year}')
@@ -246,13 +267,10 @@ def get_var_means_as_monthly_records(var, name=None):
         vars = [var for var in vars if 'mean' in var]
 
         # get days in year
-        if calendar.isleap(2001):
+        if calendar.isleap(year):
             days_in_year = 366
         else:
             days_in_year = 365
-
-        # initialise empty df:
-        out_data = pd.DataFrame()
 
         # get daily intensity of rainfall first
         for id in ids_list:
@@ -313,8 +331,9 @@ def get_var_means_as_monthly_records(var, name=None):
                     axis = 0
                 )
 
-        # save output csv with id as single row
-    out_data.to_csv(here(f'data/csv_data/{name}/final_data/{var}_mean.csv'))
+    # save output csv with id as single row
+    save_csv(out_data, f'{var}_mean.csv', name=name)
+
 
 ## get hot days per month
 def get_hot_days_per_month(name = None):
@@ -334,6 +353,10 @@ def get_hot_days_per_month(name = None):
     years = [int(year.split(".")[0]) for year in years]
     print(f'years {years} present for max_temp - processing to collate monthly means and monthly intensity indices')
 
+    # initialise empty df:
+    out_data_hot = pd.DataFrame()
+    out_data_very_hot = pd.DataFrame()
+
     for year in years:
         print(f'initiating processing of max_temp for {year}')
 
@@ -352,14 +375,10 @@ def get_hot_days_per_month(name = None):
         vars = [var for var in vars if 'mean' in var]
 
         # get days in year
-        if calendar.isleap(2001):
+        if calendar.isleap(year):
             days_in_year = 366
         else:
             days_in_year = 365
-
-        # initialise empty df:
-        out_data_hot = pd.DataFrame()
-        out_data_very_hot = pd.DataFrame()
 
         # get daily intensity of rainfall first
         for id in ids_list:
@@ -371,9 +390,9 @@ def get_hot_days_per_month(name = None):
                 subdat = pd.DataFrame(subdat.mean(axis=0)).T
             
             # get/initialise rainfall totals for sa1 region
-            annual_vals = [subdat[x].item for x in subdat.columns]
-            annual_hot_days = len([x for x in annual_vals if x > 40]).item()
-            annual_very_hot_days = len([x for x in annual_vals if x > 45]).item()
+            annual_vals = [subdat[x].item() for x in subdat.columns]
+            annual_hot_days = len([x for x in annual_vals if x > 40])
+            annual_very_hot_days = len([x for x in annual_vals if x > 45])
             monthly_values = []
             hot_days_by_month = []
             very_hot_days_by_month = []
@@ -385,8 +404,8 @@ def get_hot_days_per_month(name = None):
                 
                 # check if last day of month - if so add entries to 'hot_days_by_month' and 'very_hot_days_by_month'
                 if day+1 == year_days_to_end_of_this_month:
-                    hot_days_by_month.append(len([x for x in day_values if x > 40]))
-                    very_hot_days_by_month.append(len([x for x in day_values if x > 45]))
+                    hot_days_by_month.append(len([x for x in monthly_values if x > 40]))
+                    very_hot_days_by_month.append(len([x for x in monthly_values if x > 45]))
 
                     # finally reset monthly_rainfall
                     monthly_values = []
@@ -451,8 +470,8 @@ def get_hot_days_per_month(name = None):
                 )
 
     # save output csv with id as single row
-    out_data_hot.to_csv(here(f'data/csv_data/{name}/final_data/hot_days.csv'))
-    out_data_very_hot.to_csv(here(f'data/csv_data/{name}/final_data/very_hot_days.csv'))
+    save_csv(out_data_hot, 'hot_days.csv', name=name)
+    save_csv(out_data_very_hot, 'very_hot_days_mm.csv', name=name)
 
 ## get cold days per month
 def get_cold_days_per_month(name = None):
@@ -470,6 +489,10 @@ def get_cold_days_per_month(name = None):
     years = [int(year.split(".")[0]) for year in years]
     print(f'years {years} present for min_temp - processing to collate monthly means and monthly intensity indices')
 
+    # initialise empty df:
+    out_data_hot_nights = pd.DataFrame()
+    out_data_frost = pd.DataFrame()
+    
     for year in years:
         print(f'initiating processing of min_temp for {year}')
 
@@ -488,14 +511,10 @@ def get_cold_days_per_month(name = None):
         vars = [var for var in vars if 'mean' in var]
 
         # get days in year
-        if calendar.isleap(2001):
+        if calendar.isleap(year):
             days_in_year = 366
         else:
             days_in_year = 365
-
-        # initialise empty df:
-        out_data_hot_nights = pd.DataFrame()
-        out_data_frost = pd.DataFrame()
 
         # get daily intensity of rainfall first
         for id in ids_list:
@@ -507,9 +526,9 @@ def get_cold_days_per_month(name = None):
                 subdat = pd.DataFrame(subdat.mean(axis=0)).T
             
             # get/initialise rainfall totals for sa1 region
-            annual_vals = [subdat[x].item for x in subdat.columns]
-            annual_hot_nights = len([x for x in annual_vals if x > 25]).item()
-            annual_frost_days = len([x for x in annual_vals if x < 1]).item()
+            annual_vals = [subdat[x].item() for x in subdat.columns]
+            annual_hot_nights = len([x for x in annual_vals if x > 25])
+            annual_frost_days = len([x for x in annual_vals if x < 1])
             monthly_values = []
             hot_nights_by_month = []
             frost_days_by_month = []
@@ -519,10 +538,10 @@ def get_cold_days_per_month(name = None):
                 day_values = subdat.iloc[:, day].item()
                 monthly_values.append(day_values)
                 
-                # check if last day of month - if so add entries to 'hot_days_by_month' and 'very_hot_days_by_month'
+                # check if last day of month 
                 if day+1 == year_days_to_end_of_this_month:
-                    hot_nights_by_month.append(len([x for x in day_values if x > 25]))
-                    frost_days_by_month.append(len([x for x in day_values if x < 1]))
+                    hot_nights_by_month.append(len([x for x in monthly_values if x > 25]))
+                    frost_days_by_month.append(len([x for x in monthly_values if x < 1]))
 
                     # finally reset monthly_rainfall
                     monthly_values = []
@@ -565,7 +584,7 @@ def get_cold_days_per_month(name = None):
 
             if out_data_hot_nights.empty:
                 # create the out dataframe
-                out_data_hot = new_data_hot_nights
+                out_data_hot_nights = new_data_hot_nights
             else:
                 out_data_hot_nights = pd.concat([
                     out_data_hot_nights,
@@ -586,9 +605,9 @@ def get_cold_days_per_month(name = None):
                     axis = 0
                 )
 
-    # save output csv with id as single row
-    out_data_hot_nights.to_csv(here(f'data/csv_data/{name}/final_data/hot_nights.csv'))
-    out_data_frost.to_csv(here(f'data/csv_data/{name}/final_data/frost_days.csv'))
+    # create dir if not exists
+    save_csv(out_data_hot_nights, 'hot_nights.csv', name=name)
+    save_csv(out_data_frost, 'frost_days.csv', name=name)
 
 def get_average_monthly_temps(name=None):
     ## uses min_temp csv data to get hot nights and possible frost days per month
@@ -614,6 +633,9 @@ def get_average_monthly_temps(name=None):
 
     print(f'years {years_max} present for min_temp - processing to collate monthly means and monthly intensity indices')
 
+    # initialise empty df:
+    out_data = pd.DataFrame()
+    
     for year in years_max:
         print(f'initiating processing of average temperatures for {year}')
 
@@ -638,18 +660,15 @@ def get_average_monthly_temps(name=None):
         vars_max = [var for var in vars_max if 'mean' in var]
 
         # get days in year
-        if calendar.isleap(2001):
+        if calendar.isleap(year):
             days_in_year = 366
         else:
             days_in_year = 365
 
-        # initialise empty df:
-        out_data = pd.DataFrame()
-
         # get daily intensity of rainfall first
         for id in ids_list_max:
-            subdat_min = data_min.loc[data_min['SA1_CODE21']==id, vars]
-            subdat_max = data_max.loc[data_max['SA1_CODE21']==id, vars]
+            subdat_min = data_min.loc[data_min['SA1_CODE21']==id, vars_min]
+            subdat_max = data_max.loc[data_max['SA1_CODE21']==id, vars_max]
             
             if not subdat_min.shape[0] == subdat_max.shape[0]:
                 ValueError(f'ID {id} present in max_temp is missing from min_temp')
@@ -661,9 +680,14 @@ def get_average_monthly_temps(name=None):
                 subdat_max = pd.DataFrame(subdat_max.mean(axis=0)).T
             
             # get/initialise rainfall totals for sa1 region
-            # zip min and max together first
-            average_temps = [np.mean(x) for x in zip(subdat_min, subdat_max)] # returns mean for each period (day) of min and max temp
-            annual_vals = [x.item for x in average_temps]
+            # get rid of the stupid pandas/numpy shite structures (these are the worst idea in data science)
+            
+            keys = subdat_min.keys()
+            average_temps = []
+            for key in keys:
+                average_temps.append(np.mean([subdat_min[key].item(), subdat_max[key].item()]))
+            
+            annual_vals = [x.item() for x in average_temps]
             avg_annual_temp = np.mean(annual_vals).item()
             avg_temp_by_month = []
             monthly_values = []
@@ -672,9 +696,9 @@ def get_average_monthly_temps(name=None):
                 year_days_to_end_of_this_month = get_recursive_days_in_year(year, get_month(year, day+1))
                 monthly_values.append(annual_vals[day])
                 
-                # check if last day of month - if so add entries to 'hot_days_by_month' and 'very_hot_days_by_month'
+                # check if last day of month 
                 if day+1 == year_days_to_end_of_this_month:
-                    avg_temp_by_month.append(np.mean(monthly_values))
+                    avg_temp_by_month.append(np.mean(monthly_values).item())
 
                     # finally reset monthly_rainfall
                     monthly_values = []
@@ -709,10 +733,10 @@ def get_average_monthly_temps(name=None):
                 )
 
     # save output csv with id as single row
-    out_data.to_csv(here(f'data/csv_data/{name}/final_data/avg_temperature.csv'))
+    save_csv(out_data, 'avg_temperature.csv', name=name)
 
 
-def get_high_and_extreme_vpd_days_per_month(data, year, name = None):
+def get_high_and_extreme_vpd_days_per_month(name = None):
     ## uses vapour_pressure_deficit csv data to get high and extreme vpd days per mont
     # high vpd defined as vpd > 0.8
     # extreme vpd defined as vpd > 1
@@ -727,6 +751,10 @@ def get_high_and_extreme_vpd_days_per_month(data, year, name = None):
     years = [int(year.split(".")[0]) for year in years]
     print(f'years {years} present for vapour_pressure_deficit - processing to collate monthly means and monthly intensity indices')
 
+    # initialise empty df:
+    out_data_high_vpd = pd.DataFrame()
+    out_data_extreme_vpd = pd.DataFrame()
+    
     for year in years:
         print(f'initiating processing of vapour_pressure_deficit for {year}')
 
@@ -745,14 +773,10 @@ def get_high_and_extreme_vpd_days_per_month(data, year, name = None):
         vars = [var for var in vars if 'mean' in var]
 
         # get days in year
-        if calendar.isleap(2001):
+        if calendar.isleap(year):
             days_in_year = 366
         else:
             days_in_year = 365
-
-        # initialise empty df:
-        out_data_high_vpd = pd.DataFrame()
-        out_data_extreme_vpd = pd.DataFrame()
 
         # get daily intensity of rainfall first
         for id in ids_list:
@@ -764,9 +788,9 @@ def get_high_and_extreme_vpd_days_per_month(data, year, name = None):
                 subdat = pd.DataFrame(subdat.mean(axis=0)).T
             
             # get/initialise rainfall totals for sa1 region
-            annual_vals = [subdat[x].item for x in subdat.columns]
-            annual_high_vpd = len([x for x in annual_vals if x > 25]).item()
-            annual_extreme_vpd = len([x for x in annual_vals if x < 1]).item()
+            annual_vals = [subdat[x].item() for x in subdat.columns]
+            annual_high_vpd = len([x for x in annual_vals if x > 20]) #VPD measured in hpa but most lit is in kpa (10hpa = 1kpa)
+            annual_extreme_vpd = len([x for x in annual_vals if x > 30])
             monthly_values = []
             high_vpd_by_month = []
             extreme_vpd_by_month = []
@@ -776,10 +800,10 @@ def get_high_and_extreme_vpd_days_per_month(data, year, name = None):
                 day_values = subdat.iloc[:, day].item()
                 monthly_values.append(day_values)
                 
-                # check if last day of month - if so add entries to 'hot_days_by_month' and 'very_hot_days_by_month'
+                # check if last day of month 
                 if day+1 == year_days_to_end_of_this_month:
-                    high_vpd_by_month.append(len([x for x in day_values if x > 25]))
-                    extreme_vpd_by_month.append(len([x for x in day_values if x < 1]))
+                    high_vpd_by_month.append(len([x for x in monthly_values if x > 20]))
+                    extreme_vpd_by_month.append(len([x for x in monthly_values if x > 35]))
 
                     # finally reset monthly_rainfall
                     monthly_values = []
@@ -843,5 +867,5 @@ def get_high_and_extreme_vpd_days_per_month(data, year, name = None):
                 )
 
     # save output csv with id as single row
-    out_data_high_vpd.to_csv(here(f'data/csv_data/{name}/final_data/high_vpd_days.csv'))
-    out_data_extreme_vpd.to_csv(here(f'data/csv_data/{name}/final_data/extreme_vpd_days.csv'))
+    save_csv(out_data_high_vpd, 'high_vpd_days.csv', name=name)
+    save_csv(out_data_extreme_vpd, 'extreme_vpd_days.csv', name=name)
