@@ -97,9 +97,3 @@ get_average_monthly_temps(name = name)
 delete_raw_csvs('min_temp', name)
 delete_raw_csvs('max_temp', name)
 
-### Download other data
-#TBD
-
-### Process csv vars to get target final variables (e.g. rainfall intensity, monthly records, yearly records, etc)
-
-
